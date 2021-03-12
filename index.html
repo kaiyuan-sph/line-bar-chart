@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Multi Line Chart</title>
+    <script type="text/javascript" src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="https://code.jquery.com/jquery-1.10.0.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="styles.css">
+    <style></style>
+</head>
+
+<body>
+    <div id="container" class="svg-container"></div>
+    <div id="legend" class="legend-container"></div>
+    <script>
+        //------------------------1. PREPARATION------------------------//
+        //-----------------------------SVG------------------------------/
+        var margin = { top: 20, right: 20, bottom: 30, left: 68 },
+            x = d3.scaleBand().paddingInner(0.5).paddingOuter(0.25),
+            y = d3.scaleLinear(),
+            y1 = d3.scaleLinear(),
+            color = d3.scaleOrdinal()
+                .range(["#2B2B2B", "#FA9B22", "#00A3FF", "#9B9B9B", "#FFCD02", "#226EB5", "#894D21", "#44D795", "#FFC6BE", "#CCCCCC"]),
+            theData = undefined,
+            height = undefined,
+            width = undefined
+
+        //-----------------------------DRAW-----------------------------//
+        function draw() {
+            var svg = d3.select("div#container").append("svg").style("width", "100%").style("height", "100vh")
+            var lsvg = d3.select("div#legend").append("svg").style("width", "100%").style("height", "100%")
+            var g = svg.append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+
+
+            g.append("g")
+                .attr("class", "axis axis--x");
+
+            g.append("g")
+                .attr("class", "axis axis--y");
+
+            g.append("g")
+                .attr("class", "axis axis--y1");
+
+            d3.select("div#container")
+                .classed("svg-container", true) //container class to make it responsive
+                .classed("svg-content-responsive", true);
+
+            var bounds = svg.node().getBoundingClientRect()
+
+            width = bounds.width - margin.left - margin.right;
+            height = bounds.height - margin.top - margin.bottom;
+
+            //-----------------------------AXES-----------------------------//
+            x.rangeRound([0, (width - 20)]);
+            y.rangeRound([height, 0]);
+            y1.rangeRound([height, 0])
+
+            var yaxis = d3.axisLeft()
+                .ticks(5)
+                .tickSizeInner(-width)
+                .scale(y);
+
+            var y1axis = d3.axisRight()
+                .ticks(5)
+                .scale(y1);
+
+            var xaxis = d3.axisBottom()
+                .ticks(10)
+                .tickFormat(d3.timeFormat('%b'))
+                .scale(x);
+
+            // axis-x
+            g.select(".axis--x")
+                .attr("transform", "translate(0," + height + ")")
+                .call(xaxis);
+
+            g.select(".axis--y")
+                .call(yaxis);
+
+            g.select(".axis--y1")
+                .attr("transform", "translate(" + (width - margin.right) + "," + 0 + ")")
+                .call(y1axis)
+                .call(g => g.append("text")
+                    .attr("x", -margin.right)
+                    .attr("y", 10)
+                    .attr("fill", "currentColor")
+                    .attr("text-anchor", "start")
+                    .text(theData.y1axis))
+
+            //----------------------------BAR / Lines -----------------------------//
+            var bar = svg.selectAll("rect")
+                .data(theData)
+                .enter().append("g")
+
+            bar.append("rect")
+                .attr("x", function (d) { return x(d.date); })
+                .attr("y", function (d) { return y(d.vistor); })
+                .attr("width", x.bandwidth())
+                .attr("height", function (d) { return height - y(d.vistor); })
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+                .attr("fill", "lightblue")
+
+            bar.append("text")
+                .attr("dy", "1.3em")
+                .attr("x", function (d) { return x(d.date) + x.bandwidth() / 2; })
+                .attr("y", function (d) { return y(d.vistor) - 20; })
+                .attr("text-anchor", "middle")
+                .attr("font-family", "sans-serif")
+                .attr("font-size", "11px")
+                .attr("fill", "black")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+                .text(function (d) {
+                    return d.vistor;
+                });
+
+            var line = d3.line()
+                .x(function (d, i) { return x(d.date) + x.bandwidth() / 2; })
+                .y(function (d) { return y1(d.yoy); })
+                .curve(d3.curveMonotoneX);
+
+            bar.append("path")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+                .attr("class", "line") // Assign a class for styling
+                .attr("d", line(theData)); // 11. Calls the line generator
+
+            bar.append("circle") // Uses the enter().append() method
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+                .attr("class", "dot") // Assign a class for styling
+                .attr("cx", function (d, i) { return x(d.date) + x.bandwidth() / 2; })
+                .attr("cy", function (d) { return y1(d.yoy); })
+                .attr("r", 5);
+
+
+            //----------------------------legend-----------------------------//
+
+            var legend = lsvg.selectAll(".legend")
+                .data(theData.map(function (d, i) { return d.values[i].rate; }))
+                .enter().append("g")
+                .attr("class", "legend")
+                .attr("transform", function (d, i) {
+                    return "translate(" + (i % 2 * 150 + (width / 4)) + "," + (Math.floor(i / 2) * 40 + 10) + ")";
+                })
+                .style("opacity", "0");
+
+            legend.append("rect")
+                .attr("width", 60)
+                .attr("height", 5)
+                .style("fill", function (d) { return color(d); });
+
+            legend.append("text")
+                .attr("x", 75)
+                .attr("y", 3)
+                .attr("dy", ".35em")
+                .style("text-anchor", "start")
+                .text(function (d) { return d; });
+
+            legend.style("opacity", "1");
+        }
+        //-----------------------------DATA-----------------------------//
+        function loadData(tsvFile) {
+
+            const url = "https://script.google.com/a/macros/sph.com.sg/s/AKfycbwVjgt__c_7WUT0jv4UtfPlEcBHx8h2PnXgg_aCWHEGEzLNXHJWg84jmI6Ou0uBycBjrA/exec"
+            $.getJSON(url + "?callback=?",
+                { method: "line-bar" },
+                function (data) {
+                    var slices = data.slice(1).map(function (id, x) {
+                        console.log(id);
+                        return {
+                            date: new Date(id[0]),
+                            vistor: id[1],
+                            yoy: id[2]
+                        }
+                    })
+
+
+                    theData = slices;
+                    //----------------------------SCALES----------------------------//
+
+                    x.domain(theData.map(function (d) {
+                        return d.date;
+                    }));
+
+                    y.domain([0, d3.max(theData, (function (d) {
+                        return d.vistor;
+                    }))]).nice();
+
+                    y1.domain([d3.min(theData, (function (d) {
+                        return d.yoy;
+                    })), d3.max(theData, (function (d) {
+                        return d.yoy;
+                    }))]).nice();
+
+
+                    draw();
+                }
+            )
+        };
+
+        //mouseover event handler function
+        function onMouseOver(d, i) {
+            d3.select(this).attr('class', 'highlight');
+            d3.select(this)
+                .transition()     // adds animation
+                .duration(400)
+                .attr('width', x1.bandwidth() + 5)
+                .attr("y", function (d) { return y(d.value) - 10; })
+                .attr("height", function (d) { return height - y(d.value) + 10; })
+                .style("fill", d3.rgb(color(d.rate)).darker(2))
+
+            d3.select(this.parentNode)
+                .append("text")
+                .style("color", "white")
+                .attr("transform", "translate(53, 30)")
+                .attr('class', 'val')
+                .attr('x', function () {
+                    return x1(d.rate);
+                })
+                .attr('y', function () {
+                    return y(d.value);
+                })
+                .text(function () {
+                    return [d.value];  // Value of the text
+                });
+
+        }
+
+        //mouseout event handler function
+        function onMouseOut(d, i) {
+            // use the text label class to remove label on mouseout
+            d3.select(this).attr('class', 'bar');
+            d3.select(this)
+                .transition()     // adds animation
+                .duration(400)
+                .attr('width', x1.bandwidth())
+                .attr("y", function (d) { return y(d.value); })
+                .attr("height", function (d) { return height - y(d.value); })
+                .style("fill", d3.rgb(color(d.rate)))
+
+            d3.selectAll('.val')
+                .remove()
+        }
+
+        function resizeDraw() {
+            d3.selectAll("svg").remove();
+            draw();
+        }
+
+        window.addEventListener("resize", resizeDraw);
+        loadData();
+    </script>
+    <script src="iframeResizer.contentWindow.min.js"></script>
+</body>
