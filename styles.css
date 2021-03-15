@@ -56,3 +56,23 @@
     stroke: #000000;
     stroke-opacity: 0.5;
 }
+
+#legend {
+    width: 350px;
+    margin: auto;
+}
+
+#container {
+    height: 600px;
+    max-width: 600px;
+    margin: auto;
+}
+
+.tooltip {
+    position: absolute;
+    width: 200px;
+    height: 70px;
+    padding: 10px;
+    pointer-events: none;
+    background-color: beige;
+}

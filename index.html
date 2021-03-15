@@ -27,8 +27,12 @@
 
         //-----------------------------DRAW-----------------------------//
         function draw() {
+            var monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "Novmeber", "December"]
             var svg = d3.select("div#container").append("svg").style("width", "100%").style("height", "100vh")
             var lsvg = d3.select("div#legend").append("svg").style("width", "100%").style("height", "100%")
+            var tooltip = tooltip = d3.select("body").append("div")
+                .attr("class", "tooltip")
+                .style("opacity", 0);
             var g = svg.append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
 
@@ -58,7 +62,7 @@
 
             var yaxis = d3.axisLeft()
                 .ticks(5)
-                .tickSizeInner(-width)
+                .tickSizeInner((-width + margin.right))
                 .scale(y);
 
             var y1axis = d3.axisRight()
@@ -100,6 +104,20 @@
                 .attr("height", function (d) { return height - y(d.vistor); })
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
                 .attr("fill", "lightblue")
+                .on("mouseover", function (d) {
+                    tooltip.transition()
+                        .duration(200)
+                        .style("opacity", .9);
+                    tooltip.html(monthNames[d.date.getMonth()] + "<br/> Vistor: " + d.vistor + "<br/> Yoy: " + d.yoy)
+                        .style("left", (d3.event.pageX + 5) + "px")
+                        .style("top", (d3.event.pageY - 28) + "px");
+                })
+                .on("mouseout", function (d) {
+                    tooltip.transition()
+                        .duration(500)
+                        .style("opacity", 0);
+                });
+
 
             bar.append("text")
                 .attr("dy", "1.3em")
@@ -112,7 +130,8 @@
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
                 .text(function (d) {
                     return d.vistor;
-                });
+                })
+
 
             var line = d3.line()
                 .x(function (d, i) { return x(d.date) + x.bandwidth() / 2; })
@@ -122,40 +141,54 @@
             bar.append("path")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
                 .attr("class", "line") // Assign a class for styling
-                .attr("d", line(theData)); // 11. Calls the line generator
+                .attr("d", line(theData)) // 11. Calls the line generator
 
             bar.append("circle") // Uses the enter().append() method
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
                 .attr("class", "dot") // Assign a class for styling
                 .attr("cx", function (d, i) { return x(d.date) + x.bandwidth() / 2; })
                 .attr("cy", function (d) { return y1(d.yoy); })
-                .attr("r", 5);
+                .attr("r", 5)
+                .on("mouseover", function (d) {
+                    tooltip.transition()
+                        .duration(200)
+                        .style("opacity", .9);
+                    tooltip.html(monthNames[d.date.getMonth()] + "<br/> Vistor: " + d.vistor + "<br/> Yoy: " + d.yoy)
+                        .style("left", (d3.event.pageX + 5) + "px")
+                        .style("top", (d3.event.pageY - 28) + "px");
+                })
+                .on("mouseout", function (d) {
+                    tooltip.transition()
+                        .duration(500)
+                        .style("opacity", 0);
+                });
+
 
 
             //----------------------------legend-----------------------------//
 
-            var legend = lsvg.selectAll(".legend")
-                .data(theData.map(function (d, i) { return d.values[i].rate; }))
-                .enter().append("g")
-                .attr("class", "legend")
-                .attr("transform", function (d, i) {
-                    return "translate(" + (i % 2 * 150 + (width / 4)) + "," + (Math.floor(i / 2) * 40 + 10) + ")";
-                })
-                .style("opacity", "0");
+            // var legend = lsvg.selectAll(".legend")
+            //     .data(theData.map(function (d, i) { return d.values[i].rate; }))
+            //     .enter().append("g")
+            //     .attr("class", "legend")
+            //     .attr("transform", function (d, i) {
+            //         return "translate(" + (i % 2 * 150 + (width / 4)) + "," + (Math.floor(i / 2) * 40 + 10) + ")";
+            //     })
+            //     .style("opacity", "0");
 
-            legend.append("rect")
-                .attr("width", 60)
-                .attr("height", 5)
-                .style("fill", function (d) { return color(d); });
+            // legend.append("rect")
+            //     .attr("width", 60)
+            //     .attr("height", 5)
+            //     .style("fill", function (d) { return color(d); });
 
-            legend.append("text")
-                .attr("x", 75)
-                .attr("y", 3)
-                .attr("dy", ".35em")
-                .style("text-anchor", "start")
-                .text(function (d) { return d; });
+            // legend.append("text")
+            //     .attr("x", 75)
+            //     .attr("y", 3)
+            //     .attr("dy", ".35em")
+            //     .style("text-anchor", "start")
+            //     .text(function (d) { return d; });
 
-            legend.style("opacity", "1");
+            // legend.style("opacity", "1");
         }
         //-----------------------------DATA-----------------------------//
         function loadData(tsvFile) {
